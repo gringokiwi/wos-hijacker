@@ -1,13 +1,18 @@
-FROM openresty/openresty:alpine
+FROM golang:1.21-alpine AS builder
 
-RUN apk add --no-cache git luarocks \
-    && luarocks install lua-resty-http \
-    && mkdir -p /usr/local/openresty/nginx/conf/conf.d
+WORKDIR /app
+COPY go.mod go.sum* ./
+RUN go mod download
 
-COPY nginx.conf /usr/local/openresty/nginx/conf/nginx.conf
-COPY default.conf /usr/local/openresty/nginx/conf/conf.d/default.conf
-COPY fetch.lua /usr/local/openresty/nginx/conf/fetch.lua
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -o wos-hijacker .
+
+FROM alpine:latest
+RUN apk --no-cache add ca-certificates
+WORKDIR /root/
+
+COPY --from=builder /app/wos-hijacker .
 
 EXPOSE 8080
 
-CMD ["/usr/local/openresty/bin/openresty", "-g", "daemon off;"]
+CMD ["./wos-hijacker"]
