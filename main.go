@@ -49,6 +49,15 @@ func editLnurlpJson(body []byte, username string) []byte {
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
+	// Handle preflight OPTIONS requests
+	if r.Method == "OPTIONS" {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
 	// Match Lightning Address URL pattern
 	re := regexp.MustCompile(`^/\.well-known/lnurlp/(\w+)$`)
 	matches := re.FindStringSubmatch(r.URL.Path)
@@ -101,6 +110,11 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			w.Header()[k] = v
 		}
 	}
+
+	// Add CORS headers
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
 	// Set status code and return body
 	w.WriteHeader(resp.StatusCode)
