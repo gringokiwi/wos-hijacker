@@ -1,8 +1,9 @@
-FROM nginx:alpine
+FROM openresty/openresty:alpine
 
-COPY nginx.conf /etc/nginx/nginx.conf
+COPY nginx.conf /usr/local/openresty/nginx/conf/nginx.conf
 COPY default.conf /etc/nginx/conf.d/default.conf
+COPY fetch.lua /usr/local/openresty/nginx/conf/fetch.lua
 
 EXPOSE 8080
 
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["/usr/local/openresty/bin/openresty", "-g", "daemon off;"]
