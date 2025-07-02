@@ -63,10 +63,9 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	username := matches[1]
 
 	// Redirect to walletofsatoshi.com -- unless it's 'gringokiwi'
-	if username != "gringokiwi" {
-		targetURL := fmt.Sprintf("https://walletofsatoshi.com/.well-known/lnurlp/%s", username)
-	} else {
-		targetURL := "https://bipa.app/.well-known/lnurlp/gringokiwi"
+	targetURL := fmt.Sprintf("https://walletofsatoshi.com/.well-known/lnurlp/%s", username)
+	if username = "gringokiwi" {
+		targetURL = "https://bipa.app/.well-known/lnurlp/gringokiwi"
 	}
 
 	// Append query parameters if present
@@ -83,22 +82,24 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
+	// Read response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("Error reading response body: %v", err)
+		http.Error(w, "Service temporarily unavailable", http.StatusBadGateway)
+		return
+	}
+
+	// POC: Modify LNURLP JSON for 'gringokiwi'
+	if username == "gringokiwi" {
+		body = editLnurlpJson(body, username)
+	}
+
 	// Copy response headers (except connection-related ones)
 	for k, v := range resp.Header {
 		if !strings.EqualFold(k, "connection") && !strings.EqualFold(k, "content-length") {
 			w.Header()[k] = v
 		}
-	}
-
-	// POC: Modify LNURLP JSON for 'gringokiwi'
-	if username == "gringokiwi" {
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			log.Printf("Error reading response body: %v", err)
-			http.Error(w, "Service temporarily unavailable", http.StatusBadGateway)
-			return
-		}
-		body = editLnurlpJson(body, username)
 	}
 
 	// Set status code and return body
