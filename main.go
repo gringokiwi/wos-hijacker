@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -28,26 +30,52 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("OK"))
 }
 
+func editLnurlpJson(body []byte, username string) []byte {
+	var data map[string]interface{}
+	if err := json.Unmarshal(body, &data); err != nil {
+		log.Printf("Error parsing JSON: %v", err)
+		return body
+	}
+
+	// Replace metadata with custom value
+	data["metadata"] = `[["text/plain","Pay to Wallet of Satoshi user: gringokiwi"],["text/identifier","gringokiwi@walletofsatoshi.com"]]`
+
+	modified, err := json.Marshal(data)
+	if err != nil {
+		log.Printf("Error marshaling JSON: %v", err)
+		return body
+	}
+
+	return modified
+}
+
 func handler(w http.ResponseWriter, r *http.Request) {
-	// Match Lightning address pattern
+	// Match Lightning Address URL pattern
 	re := regexp.MustCompile(`^/\.well-known/lnurlp/(\w+)$`)
 	matches := re.FindStringSubmatch(r.URL.Path)
 	
+	// Redirect if no match found
 	if matches == nil {
-		// Redirect all other requests to walletofsatoshi.com
 		http.Redirect(w, r, "https://walletofsatoshi.com"+r.URL.RequestURI(), http.StatusMovedPermanently)
 		return
 	}
 
-	username := "gringokiwi"
-	
-	// Build target URL with query parameters
-	targetURL := fmt.Sprintf("https://bipa.app/.well-known/lnurlp/%s", username)
+	// Extract username
+	username := matches[1]
+
+	// Redirect to walletofsatoshi.com -- unless it's 'gringokiwi'
+	if username != "gringokiwi" {
+		targetURL := fmt.Sprintf("https://walletofsatoshi.com/.well-known/lnurlp/%s", username)
+	} else {
+		targetURL := "https://bipa.app/.well-known/lnurlp/gringokiwi"
+	}
+
+	// Append query parameters if present
 	if r.URL.RawQuery != "" {
 		targetURL += "?" + r.URL.RawQuery
 	}
 
-	// Make request to walletofsatoshi.com
+	// Fetch LNURLP JSON from target URL
 	resp, err := http.Get(targetURL)
 	if err != nil {
 		log.Printf("Error fetching %s: %v", targetURL, err)
@@ -63,7 +91,18 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Set status code and copy body
+	// POC: Modify LNURLP JSON for 'gringokiwi'
+	if username == "gringokiwi" {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			log.Printf("Error reading response body: %v", err)
+			http.Error(w, "Service temporarily unavailable", http.StatusBadGateway)
+			return
+		}
+		body = editLnurlpJson(body, username)
+	}
+
+	// Set status code and return body
 	w.WriteHeader(resp.StatusCode)
-	io.Copy(w, resp.Body)
+	w.Write(body)
 }
