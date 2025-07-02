@@ -74,7 +74,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	// Redirect to walletofsatoshi.com -- unless it's 'gringokiwi'
 	targetURL := fmt.Sprintf("https://walletofsatoshi.com/.well-known/lnurlp/%s", username)
 	if username == "gringokiwi" {
-		targetURL = "https://bipa.app/.well-known/lnurlp/gringokiwi"
+		targetURL = "https://strike.me/.well-known/lnurlp/gringokiwi"
 	}
 
 	// Append query parameters if present
