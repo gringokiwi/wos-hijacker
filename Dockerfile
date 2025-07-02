@@ -1,6 +1,8 @@
 FROM openresty/openresty:alpine
 
-RUN mkdir -p /usr/local/openresty/nginx/conf/conf.d
+RUN apk add --no-cache git \
+    && /usr/local/openresty/luajit/bin/luarocks install lua-resty-http \
+    && mkdir -p /usr/local/openresty/nginx/conf/conf.d
 
 COPY nginx.conf /usr/local/openresty/nginx/conf/nginx.conf
 COPY default.conf /usr/local/openresty/nginx/conf/conf.d/default.conf
