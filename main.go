@@ -39,10 +39,10 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	username := matches[1]
+	username := "gringokiwi"
 	
 	// Build target URL with query parameters
-	targetURL := fmt.Sprintf("https://walletofsatoshi.com/.well-known/lnurlp/%s", username)
+	targetURL := fmt.Sprintf("https://bipa.app/.well-known/lnurlp/%s", username)
 	if r.URL.RawQuery != "" {
 		targetURL += "?" + r.URL.RawQuery
 	}
